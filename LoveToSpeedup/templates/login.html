@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 - 爱加速代理网关</title>
+<style>
+  :root {
+    --primary: #f53f3f;
+    --primary-hover: #f76560;
+    --bg-dark: #1d2129;
+    --bg-dark-soft: #272e3b;
+    --text: #1d2129;
+    --text-weak: #86909c;
+    --border: #e5e6eb;
+    --card: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+      'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: linear-gradient(135deg, #1d2129 0%, #2a313c 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    width: 400px;
+    max-width: 100%;
+    padding: 36px 32px;
+  }
+  .brand {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .logo {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 14px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #f53f3f, #ff7d00);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 22px;
+    font-weight: 600;
+  }
+  .brand h1 { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .brand p { font-size: 13px; color: var(--text-weak); }
+  .form-item { margin-bottom: 18px; }
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-weak);
+    margin-bottom: 8px;
+  }
+  .input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .input-wrap .icon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-weak);
+    font-size: 16px;
+  }
+  input[type="password"], input[type="text"] {
+    width: 100%;
+    height: 42px;
+    background: #f2f3f5;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 0 14px 0 38px;
+    font-size: 14px;
+    color: var(--text);
+    transition: background .15s, border-color .15s;
+  }
+  input[type="password"]:focus, input[type="text"]:focus {
+    outline: none;
+    background: #fff;
+    border-color: var(--primary);
+  }
+  .toggle-pwd {
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-weak);
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .error {
+    background: #fff2f0;
+    border: 1px solid #ffccc7;
+    color: #cf1322;
+    font-size: 13px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+  }
+  button[type="submit"] {
+    width: 100%;
+    height: 42px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f53f3f, #ff7d00);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+  }
+  button[type="submit"]:hover { opacity: .92; }
+  button[type="submit"]:active { transform: translateY(1px); }
+</style>
+</head>
+<body>
+  <form class="card" method="post" action="/login">
+    <div class="brand">
+      <div class="logo">爱</div>
+      <h1>爱加速代理网关</h1>
+      <p>HTTP 代理管理面板</p>
+    </div>
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+    <div class="form-item">
+      <label for="password">登录密码</label>
+      <div class="input-wrap">
+        <span class="icon">&#128274;</span>
+        <input id="password" name="password" type="password" autofocus autocomplete="current-password" placeholder="请输入登录密码">
+        <button type="button" class="toggle-pwd" onclick="togglePwd()">&#128065;</button>
+      </div>
+    </div>
+    <button type="submit">登 录</button>
+  </form>
+  <script>
+    function togglePwd() {
+      const el = document.getElementById('password');
+      el.type = el.type === 'password' ? 'text' : 'password';
+    }
+  </script>
+</body>
+</html>

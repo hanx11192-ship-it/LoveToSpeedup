@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  ajiasu-gateway:
+    build: .
+    container_name: ajiasu-gateway
+    restart: unless-stopped
+    ports:
+      - "5702:8000"      # Web 面板 / REST API
+      - "10801:10801"    # 主槽（原版固定端口，多账户切换 + 临时租约）
+      - "10802-10809:10802-10809"  # 额外端口槽（动态创建，绑定指定账户/地区；短期或长期常驻）
+    environment:
+      - GATEWAY_PORT=8000
+      - PROXY_FORWARD_PORT=10801
+      - PUBLIC_PROXY=http://ajiasu-gateway:10801
+      - GATEWAY_DEFAULT_TTL=60
+      - GATEWAY_DATA_DIR=/data
+      # 额外端口槽数量（默认 8 个，对应 10802..10809）；如需更多可上调
+      - SLOT_EXTRA_PORT_COUNT=8
+      - SLOT_EXTRA_PORT_START=10802
+      # 面板与 API 的登录密码；不设置时首次启动会自动生成并打印到日志（docker logs ajiasu-gateway）
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+    volumes:
+      - ./data:/data
+    networks:
+      - default
+      - proxypool
+
+networks:
+  proxypool:
+    external:
+      name: proxypool_default

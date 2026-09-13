@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>爱加速代理网关</title>
+<style>
+:root {
+  --primary: #f53f3f;
+  --primary-hover: #f76560;
+  --sidebar-bg: #1d2129;
+  --sidebar-bg-soft: #272e3b;
+  --sidebar-text: #c9cdd4;
+  --topbar-h: 56px;
+  --sidebar-w: 220px;
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --border: #e5e6eb;
+  --text: #1d2129;
+  --text-weak: #86909c;
+  --ok: #00b42a;
+  --ok-soft: #e8ffea;
+  --bad: #f53f3f;
+  --bad-soft: #fff2f0;
+  --warn: #ff7d00;
+  --warn-soft: #fff7e8;
+  --blue: #165dff;
+  --blue-soft: #e8f3ff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+.app-shell { display: flex; height: 100%; }
+.app-sidebar {
+  width: var(--sidebar-w); flex: 0 0 var(--sidebar-w); background: var(--sidebar-bg);
+  display: flex; flex-direction: column; z-index: 30; transition: transform .2s ease;
+}
+.brand {
+  height: var(--topbar-h); display: flex; align-items: center; gap: 10px;
+  padding: 0 16px; color: #fff; font-size: 16px; font-weight: 600;
+  border-bottom: 1px solid rgba(255,255,255,.06); white-space: nowrap; overflow: hidden;
+}
+.brand-logo {
+  width: 30px; height: 30px; border-radius: 8px; flex: 0 0 30px;
+  background: linear-gradient(135deg, #f53f3f, #ff7d00);
+  display: flex; align-items: center; justify-content: center; font-size: 14px; color: #fff;
+}
+.app-menu { flex: 1; overflow-y: auto; padding: 10px 10px 16px; }
+.menu-item {
+  display: flex; align-items: center; gap: 10px; padding: 0 12px; height: 40px; margin-bottom: 4px;
+  border-radius: 6px; color: var(--sidebar-text); cursor: pointer; font-size: 14px; text-decoration: none;
+  transition: background .15s, color .15s;
+}
+.menu-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+.menu-item.active { background: var(--primary); color: #fff; }
+.menu-item .icon { width: 20px; text-align: center; font-size: 16px; }
+.menu-group-title {
+  padding: 14px 12px 6px; font-size: 11px; color: #7a828e; letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.app-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.app-topbar {
+  height: var(--topbar-h); background: #fff; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px; padding: 0 16px; flex: 0 0 var(--topbar-h);
+}
+.app-topbar .menu-btn {
+  display: none; border: none; background: transparent; color: var(--text-weak);
+  font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+}
+.app-topbar .menu-btn:hover { background: #f2f3f5; color: var(--text); }
+.app-topbar .title { font-size: 16px; font-weight: 600; }
+.app-topbar .spacer { flex: 1; }
+.user-tag {
+  display: inline-flex; align-items: center; gap: 6px; background: var(--blue-soft); color: var(--blue);
+  border: 1px solid rgba(22,93,255,.15); border-radius: 6px; padding: 4px 10px; font-size: 13px;
+}
+.icon-btn {
+  border: none; background: transparent; cursor: pointer; font-size: 18px; color: var(--text-weak);
+  padding: 6px 8px; border-radius: 6px; line-height: 1;
+}
+.icon-btn:hover { background: #f2f3f5; color: var(--text); }
+.app-content { flex: 1; overflow-y: auto; padding: 16px; }
+.sidebar-mask {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 25;
+}
+.section { display: none; }
+.section.active { display: block; }
+.panel {
+  background: var(--card); border-radius: 8px; border: 1px solid var(--border);
+  padding: 16px; margin-bottom: 16px;
+}
+.panel-head {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.panel-head h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.panel-head .spacer { flex: 1; }
+.stat-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px;
+}
+.stat-card {
+  background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 16px;
+}
+.stat-card .label { color: var(--text-weak); font-size: 13px; margin-bottom: 6px; }
+.stat-card .value { font-size: 24px; font-weight: 600; line-height: 1.2; }
+.stat-card .sub { margin-top: 6px; font-size: 12px; color: var(--text-weak); }
+.toolbar {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px;
+}
+.toolbar .spacer { flex: 1; }
+.form-row {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;
+}
+.form-row:last-child { margin-bottom: 0; }
+label { font-size: 13px; color: var(--text-weak); }
+input, select {
+  height: 34px; background: #f2f3f5; border: 1px solid transparent; border-radius: 6px;
+  padding: 0 10px; font-size: 13px; color: var(--text); transition: background .15s, border-color .15s;
+}
+input:focus, select:focus { outline: none; background: #fff; border-color: var(--primary); }
+button {
+  height: 34px; border-radius: 6px; padding: 0 14px; font-size: 13px; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--border); background: #fff; color: var(--text); transition: all .15s;
+}
+button:hover { background: #f7f8fa; border-color: var(--border); }
+button.primary {
+  background: linear-gradient(135deg, #f53f3f, #ff7d00); color: #fff; border: none;
+}
+button.primary:hover { opacity: .92; }
+button.danger { border-color: var(--bad); color: var(--bad); background: #fff; }
+button.danger:hover { background: var(--bad-soft); }
+button.ghost { background: transparent; border: none; color: var(--text-weak); }
+button.ghost:hover { background: #f2f3f5; color: var(--text); }
+button.sm { height: 28px; padding: 0 10px; font-size: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+th { color: var(--text-weak); font-weight: 500; background: #fafafa; }
+tbody tr:hover { background: #fafafa; }
+tbody tr:last-child td { border-bottom: none; }
+.mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 12px; }
+.pill {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 12px; border-radius: 20px;
+  padding: 2px 10px; white-space: nowrap;
+}
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.long { background: var(--blue-soft); color: var(--blue); }
+.pill.short { background: #f2f3f5; color: var(--text-weak); }
+.hint { color: var(--text-weak); font-size: 12px; line-height: 1.7; }
+.hint code { background: #f2f3f5; border-radius: 4px; padding: 1px 5px; font-size: 11px; }
+.status-box { font-size: 14px; line-height: 1.9; }
+.code-block {
+  background: #0d0f12; border-radius: 8px; padding: 10px 12px; color: #d7dade; font-size: 12px;
+  font-family: 'SFMono-Regular', Consolas, monospace; overflow-x: auto; position: relative;
+}
+.copy-btn {
+  position: absolute; top: 8px; right: 8px; height: auto; padding: 4px 10px; font-size: 12px;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); color: #d7dade;
+}
+.copy-btn:hover { background: rgba(255,255,255,.18); }
+.empty { text-align: center; color: var(--text-weak); padding: 30px; font-size: 13px; }
+.toast {
+  position: fixed; top: 16px; right: 16px; z-index: 100; display: flex; flex-direction: column; gap: 8px;
+}
+.toast-item {
+  background: #fff; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.12);
+  padding: 12px 16px; font-size: 13px; min-width: 220px; display: flex; align-items: center; gap: 8px;
+  animation: slideIn .2s ease;
+}
+.toast-item.success { border-left: 4px solid var(--ok); }
+.toast-item.error { border-left: 4px solid var(--bad); }
+@keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@media (max-width: 900px) {
+  .app-sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); box-shadow: 2px 0 12px rgba(0,0,0,.25); }
+  .app-sidebar.mobile-open { transform: translateX(0); }
+  .app-topbar .menu-btn { display: inline-block; }
+  .sidebar-mask.show { display: block; }
+  .stat-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-logo">爱</span>
+      <span class="brand-text">爱加速代理网关</span>
+    </div>
+    <nav class="app-menu">
+      <div class="menu-group-title">监控</div>
+      <a class="menu-item active" data-section="dashboard" href="#dashboard">
+        <span class="icon">&#128200;</span><span>仪表盘</span>
+      </a>
+      <div class="menu-group-title">代理服务</div>
+      <a class="menu-item" data-section="main" href="#main">
+        <span class="icon">&#128640;</span><span>主端口代理</span>
+      </a>
+      <a class="menu-item" data-section="slots" href="#slots">
+        <span class="icon">&#128451;</span><span>端口槽管理</span>
+      </a>
+      <a class="menu-item" data-section="nodes" href="#nodes">
+        <span class="icon">&#127758;</span><span>节点总览</span>
+      </a>
+      <div class="menu-group-title">账户</div>
+      <a class="menu-item" data-section="accounts" href="#accounts">
+        <span class="icon">&#128100;</span><span>账户管理</span>
+      </a>
+      <div class="menu-group-title">文档</div>
+      <a class="menu-item" data-section="api" href="#api">
+        <span class="icon">&#128220;</span><span>API 文档</span>
+      </a>
+      <div class="menu-group-title">系统</div>
+      <a class="menu-item" data-section="settings" href="#settings">
+        <span class="icon">&#9881;</span><span>修改密码</span>
+      </a>
+      <a class="menu-item" data-section="about" href="#about">
+        <span class="icon">&#8505;</span><span>关于</span>
+      </a>
+    </nav>
+  </aside>
+
+  <div class="sidebar-mask" id="sidebarMask"></div>
+
+  <div class="app-main">
+    <header class="app-topbar">
+      <button class="menu-btn" id="menuBtn" title="菜单">&#9776;</button>
+      <span class="title" id="pageTitle">仪表盘</span>
+      <span class="spacer"></span>
+      <span class="user-tag"><span>&#128100;</span> admin</span>
+      <button class="icon-btn" onclick="logout()" title="退出登录">&#128682;</button>
+    </header>
+
+    <main class="app-content">
+      <!-- 仪表盘 -->
+      <section class="section active" id="dashboard">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="label">主端口状态</div>
+            <div class="value" id="dashMainStatus"><span class="pill bad">离线</span></div>
+            <div class="sub" id="dashMainSub">未连接</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">主端口代理</div>
+            <div class="value mono" id="dashMainProxy" style="font-size:14px">-</div>
+            <div class="sub">其他容器/脚本使用地址</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">在线端口槽</div>
+            <div class="value" id="dashSlotOnline">0</div>
+            <div class="sub" id="dashSlotSub">总计 0 个</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">已配置账户</div>
+            <div class="value" id="dashAccCount">0</div>
+            <div class="sub">可用爱加速账户</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>主端口实时状态</h3><span class="spacer"></span><button class="sm" onclick="refreshStatus()">&#128260; 刷新</button></div>
+          <div class="status-box" id="statusBox">加载中...</div>
+          <div class="hint" id="proxyHint" style="margin-top:8px"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>端口槽概览</h3><span class="spacer"></span><button class="sm" onclick="showSection('slots')">管理</button></div>
+          <div id="dashSlotWrap"><div class="empty">暂无端口槽</div></div>
+        </div>
+      </section>
+
+      <!-- 主端口代理 -->
+      <section class="section" id="main">
+        <div class="panel">
+          <div class="panel-head"><h3>主端口代理</h3><span class="spacer"></span><span class="pill long">固定端口 <span class="mono" id="mainPort">10801</span></span></div>
+          <div class="hint">主端口对应原版固定端口，按需连接，不自动常驻。选择一个<b>未被其他槽占用</b>的账户，连接后其他容器可通过固定地址调用 HTTP 代理。</div>
+          <div class="form-row" style="margin-top:12px">
+            <label>账户</label>
+            <select id="mainAcc"><option value="">自动选择</option></select>
+            <label>地区</label>
+            <input id="region" list="regionList" placeholder="留空 = 账户下任意地区" style="width:180px">
+            <label>时长(秒)</label>
+            <input id="ttl" type="number" value="0" style="width:90px" title="0 表示不设置 TTL">
+            <button class="primary" onclick="doAcquire()">连接主端口</button>
+            <button class="danger" onclick="doRelease()">断开</button>
+          </div>
+          <div id="acquireResult" class="status-box" style="margin-top:10px"></div>
+          <div class="code-block" style="margin-top:12px" id="mainCurl">curl -x <span id="mainProxy">http://127.0.0.1:10801</span> http://ip.3322.net
+            <button class="copy-btn" onclick="copyProxy()">复制地址</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 端口槽管理 -->
+      <section class="section" id="slots">
+        <div class="panel">
+          <div class="panel-head"><h3>创建端口槽</h3></div>
+          <div class="hint">每个端口槽对应一个独立的对外端口，可长期在线。绑定<b>专属账户</b>（不要与其它槽重复），避免爱加速单账户单代理限制。</div>
+          <div class="form-row" style="margin-top:12px">
+            <label>账户</label>
+            <select id="slotAcc"><option value="">请选择账户</option></select>
+            <label>地区</label>
+            <input id="slotRegion" list="regionList" placeholder="留空 = 不限" style="width:150px">
+            <label>模式</label>
+            <select id="slotMode"><option value="short">短期 (short)</option><option value="long">长期 (long)</option></select>
+            <label>时长(秒)</label>
+            <input id="slotTtl" type="number" value="120" style="width:90px">
+            <button class="primary" onclick="createSlot()">创建端口槽</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>端口槽列表</h3><span class="spacer"></span><button class="sm" onclick="loadSlots()">刷新</button></div>
+          <div style="overflow:auto">
+            <table>
+              <thead>
+                <tr><th>槽ID</th><th>模式</th><th>对外端口</th><th>状态</th><th>账户</th><th>地区</th><th>节点</th><th>出口IP</th><th>剩余</th><th>操作</th></tr>
+              </thead>
+              <tbody id="slotBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 账户管理 -->
+      <section class="section" id="accounts">
+        <div class="panel">
+          <div class="panel-head"><h3>添加爱加速账户</h3></div>
+          <div class="form-row">
+            <label>手机号/账号</label>
+            <input id="accUser" placeholder="手机号" style="width:180px">
+            <label>密码</label>
+            <input id="accPass" type="password" placeholder="密码" style="width:180px">
+            <button class="primary" onclick="addAccount()">添加并验证</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>账户列表</h3><span class="spacer"></span><button class="danger sm" onclick="removeChecked()">删除勾选</button></div>
+          <div style="overflow:auto">
+            <table>
+              <thead><tr><th style="width:30px"><input type="checkbox" id="accCheckAll" onclick="toggleAccAll()"></th><th>ID</th><th>账号</th><th>操作</th></tr></thead>
+              <tbody id="accBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 节点总览 -->
+      <section class="section" id="nodes">
+        <div class="panel">
+          <div class="panel-head"><h3>可用节点</h3></div>
+          <div class="form-row">
+            <label>地区</label>
+            <input id="nodeRegion" list="regionList" placeholder="过滤可用节点" style="width:180px">
+            <button onclick="loadNodes()">查询</button>
+          </div>
+          <div class="hint" id="nodeSummary"></div>
+          <div style="overflow:auto; margin-top:10px">
+            <table>
+              <thead><tr><th>账户</th><th>节点ID</th><th>状态</th><th>名称</th></tr></thead>
+              <tbody id="nodeBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 修改密码 -->
+      <section class="section" id="settings">
+        <div class="panel">
+          <div class="panel-head"><h3>修改登录密码</h3></div>
+          <div class="form-row">
+            <label>当前密码</label>
+            <input id="curPwd" type="password" placeholder="当前密码" style="width:180px">
+            <label>新密码</label>
+            <input id="newPwd" type="password" placeholder="新密码" style="width:180px">
+            <button class="primary" onclick="changePassword()">保存新密码</button>
+            <button onclick="showCurPwd()">显示当前密码</button>
+          </div>
+          <div id="pwdResult" class="status-box" style="margin-top:10px"></div>
+        </div>
+      </section>
+      <!-- API 文档 -->
+      <section class="section" id="api">
+        <div class="panel">
+          <div class="panel-head"><h3>认证方式</h3></div>
+          <div class="hint">所有接口（除 <code>/api/ping</code> 外）均需认证。Base URL 即网关地址，默认端口 <code>8000</code>（compose 映射为宿主机 <code>5702</code>，以实际部署为准）。</div>
+          <table style="margin-top:12px">
+            <thead><tr><th>方式</th><th>用法</th><th>适用场景</th></tr></thead>
+            <tbody>
+              <tr><td>Session</td><td>浏览器登录面板后自动携带 Cookie</td><td>Web 面板</td></tr>
+              <tr><td>请求头</td><td><code>-H "X-API-Key: &lt;登录密码&gt;"</code></td><td>脚本、其他容器（推荐）</td></tr>
+              <tr><td>查询参数</td><td>URL 追加 <code>?key=&lt;登录密码&gt;</code></td><td>快速 curl 调试</td></tr>
+            </tbody>
+          </table>
+          <div class="hint" style="margin-top:10px">状态码：<code>200</code> 成功 · <code>400</code> 参数错误 · <code>401</code> 未认证 · <code>404</code> 不存在 · <code>409</code> 业务失败 · <code>429</code> 登录频繁</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>端点总览</h3></div>
+          <div style="overflow:auto">
+            <table>
+              <thead><tr><th>方法</th><th>路径</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td><span class="pill ok">GET</span></td><td class="mono">/api/ping</td><td>存活探针，健康检查用</td></tr>
+                <tr><td><span class="pill ok">GET</span></td><td class="mono">/api/status</td><td>当前连接状态、租约剩余</td></tr>
+                <tr><td><span class="pill ok">GET</span></td><td class="mono">/api/accounts</td><td>账户列表</td></tr>
+                <tr><td><span class="pill warn">POST</span></td><td class="mono">/api/accounts</td><td>添加账户并验证</td></tr>
+                <tr><td><span class="pill bad">DEL</span></td><td class="mono">/api/accounts/&lt;id&gt;</td><td>删除账户</td></tr>
+                <tr><td><span class="pill ok">GET</span></td><td class="mono">/api/accounts/&lt;id&gt;/nodes</td><td>某账户节点列表（refresh=1 强刷）</td></tr>
+                <tr><td><span class="pill ok">GET</span></td><td class="mono">/api/regions</td><td>全部可用地区名</td></tr>
+                <tr><td><span class="pill ok">GET</span></td><td class="mono">/api/nodes</td><td>可用节点列表，可按地区/账户过滤</td></tr>
+                <tr><td><span class="pill warn">POST</span></td><td class="mono">/api/acquire</td><td>获取指定地区临时代理（核心接口）</td></tr>
+                <tr><td><span class="pill ok">GET</span></td><td class="mono">/api/extract</td><td>提取式接口，直接返回 ip:port 文本</td></tr>
+                <tr><td><span class="pill warn">POST</span></td><td class="mono">/api/release</td><td>立即断开当前连接</td></tr>
+                <tr><td><span class="pill ok">GET</span></td><td class="mono">/api/auth_info</td><td>返回当前登录密码</td></tr>
+                <tr><td><span class="pill warn">POST</span></td><td class="mono">/api/change_password</td><td>修改登录密码（API Key）</td></tr>
+                <tr><td><span class="pill ok">GET</span></td><td class="mono">/api/slots</td><td>列出全部端口槽</td></tr>
+                <tr><td><span class="pill warn">POST</span></td><td class="mono">/api/slots</td><td>创建额外端口槽</td></tr>
+                <tr><td><span class="pill warn">POST</span></td><td class="mono">/api/slots/&lt;id&gt;/connect</td><td>连接/重连指定槽</td></tr>
+                <tr><td><span class="pill warn">POST</span></td><td class="mono">/api/slots/&lt;id&gt;/disconnect</td><td>断开指定槽（保留配置）</td></tr>
+                <tr><td><span class="pill bad">DEL</span></td><td class="mono">/api/slots/&lt;id&gt;</td><td>删除额外端口槽（main 不可删）</td></tr>
+                <tr><td><span class="pill ok">GET</span></td><td class="mono">/api/slots/&lt;id&gt;/proxy</td><td>返回该槽对外代理地址</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>核心接口示例</h3></div>
+
+          <div class="hint" style="margin-bottom:6px"><b>POST /api/acquire</b> —— 获取临时代理</div>
+          <div class="code-block">curl -s -X POST http://&lt;网关地址&gt;/api/acquire \
+  -H "X-API-Key: &lt;登录密码&gt;" -H "Content-Type: application/json" \
+  -d '{"region":"上海","ttl":120}'
+<span class="copy-btn" onclick="copy('curl -s -X POST http://<网关地址>/api/acquire -H \'X-API-Key: <登录密码>\' -H \'Content-Type: application/json\' -d \'{\"region\":\"上海\",\"ttl\":120}\'')">复制</span></div>
+
+          <div class="hint" style="margin:14px 0 6px"><b>GET/POST /api/extract</b> —— 提取式（代理池采集器友好）</div>
+          <div class="code-block">curl "http://&lt;网关地址&gt;/api/extract?region=上海&ttl=120&key=&lt;登录密码&gt;"
+# 纯文本响应:
+# 116.128.189.42:10802
+<span class="copy-btn" onclick="copy('curl \"http://<网关地址>/api/extract?region=上海&ttl=120&key=<登录密码>\"')">复制</span></div>
+
+          <div class="hint" style="margin:14px 0 6px"><b>POST /api/slots</b> —— 创建长期在线端口槽</div>
+          <div class="code-block">curl -s -X POST http://&lt;网关地址&gt;/api/slots \
+  -H "X-API-Key: &lt;登录密码&gt;" -H "Content-Type: application/json" \
+  -d '{"account_id":"1788727900001","region":"江苏","mode":"long"}'
+<span class="copy-btn" onclick="copy('curl -s -X POST http://<网关地址>/api/slots -H \'X-API-Key: <登录密码>\' -H \'Content-Type: application/json\' -d \'{\"account_id\":\"1788727900001\",\"region\":\"江苏\",\"mode\":\"long\"}\'')">复制</span></div>
+
+          <div class="hint" style="margin:14px 0 6px"><b>代理使用方式</b></div>
+          <div class="code-block">export http_proxy=http://&lt;网关IP&gt;:&lt;代理端口&gt;
+export https_proxy=http://&lt;网关IP&gt;:&lt;代理端口&gt;
+curl http://ip.3322.net
+<span class="copy-btn" onclick="copy('export http_proxy=http://<网关IP>:<代理端口>\nexport https_proxy=http://<网关IP>:<代理端口>\ncurl http://ip.3322.net')">复制</span></div>
+        </div>
+      </section>
+
+      <!-- 关于 -->
+      <section class="section" id="about">
+        <div class="panel">
+          <div class="panel-head"><h3>项目介绍</h3></div>
+          <p style="font-size:14px; line-height:1.9; color:var(--text)">
+            <b>爱加速代理网关（LoveToSpeedup）</b>是一个基于爱加速国内节点的 HTTP 代理网关服务。它把爱加速客户端封装为可远程调用的 HTTP 代理，支持<b>多账户、多端口并行</b>：主端口固定，额外端口槽可把不同账户绑定到不同对外端口，适合给宿主机及其他 Docker 任务提供短期或长期代理。
+          </p>
+          <p class="hint" style="margin-top:10px; line-height:1.9">
+            核心能力：按地区获取临时代理、租约到期自动断开、端口槽掉线自连、账户互斥校验（避免单账户单代理冲突）、以及面板改密（即 API Key 同步）。
+          </p>
+          <p class="hint" style="margin-top:10px; line-height:1.9">
+            <b>短期（short）vs 长期（long）：</b>两者都是端口槽，区别在于<b>是否持久保活</b>。
+            <span class="pill short">短期</span> 带 TTL，连接达到有效期后<b>自动断开</b>，且不会被后台保活；
+            <span class="pill long">长期</span> 常驻在线，由守护线程每 10 秒巡检，<b>一旦掉线会自动重连</b>、永不超时。简单说：长期槽＝<b>掉线自连、持续在线</b>，短期槽＝<b>用完到期自动释放</b>。
+          </p>
+          <p class="hint" style="margin-top:10px; line-height:1.9">
+            项目地址：<a href="https://github.com/hanx11192-ship-it/LoveToSpeedup" target="_blank" rel="noopener" style="color:var(--blue)">https://github.com/hanx11192-ship-it/LoveToSpeedup</a>
+          </p>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>地址信息</h3></div>
+          <table style="margin-top:6px">
+            <tbody>
+              <tr><th style="width:140px; border:none; background:transparent">管理面板</th><td class="mono">http://&lt;VPS_IP&gt;:5702</td></tr>
+              <tr><th style="border:none; background:transparent">主端口代理</th><td class="mono">http://&lt;VPS_IP&gt;:10801</td></tr>
+              <tr><th style="border:none; background:transparent">额外端口槽范围</th><td class="mono">10802 ~ 10809</td></tr>
+              <tr><th style="border:none; background:transparent">容器服务端口</th><td class="mono">8000（compose 宿主机映射 5702）</td></tr>
+              <tr><th style="border:none; background:transparent">认证方式</th><td>登录密码 / <code>X-API-Key</code> / <code>?key=</code></td></tr>
+            </tbody>
+          </table>
+          <div class="hint" style="margin-top:10px">提示：跨主机使用请把环境变量 <code>PUBLIC_PROXY</code> 配置为公网可达地址；管理面板与 API 当前使用登录密码认证。</div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<datalist id="regionList"></datalist>
+
+<script>
+const $ = id => document.getElementById(id);
+let accounts = [];
+let lastStatus = {};
+let lastSlots = [];
+
+function toast(msg, type='success') {
+  const box = $('toast');
+  const el = document.createElement('div');
+  el.className = 'toast-item ' + type;
+  el.innerHTML = type==='success' ? '<span>&#9989;</span>' : '<span>&#10060;</span>';
+  el.appendChild(document.createTextNode(msg));
+  box.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+async function api(url, opt={}) {
+  const r = await fetch(url, Object.assign({headers:{'Content-Type':'application/json'}}, opt));
+  if (r.status === 401) { window.location.href = '/login'; return {}; }
+  const j = await r.json().catch(()=>({}));
+  return j;
+}
+
+function logout() {
+  fetch('/logout', {method:'POST'}).then(()=>window.location.href='/login');
+}
+
+function copy(text) {
+  if (navigator.clipboard) navigator.clipboard.writeText(text);
+  return text;
+}
+
+function showSection(name) {
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.toggle('active', m.dataset.section === name));
+  document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === name));
+  const titles = {dashboard:'仪表盘', main:'主端口代理', slots:'端口槽管理', nodes:'节点总览', accounts:'账户管理', api:'API 文档', settings:'修改密码', about:'关于'};
+  $('pageTitle').textContent = titles[name] || '爱加速代理网关';
+  $('sidebar').classList.remove('mobile-open');
+  $('sidebarMask').classList.remove('show');
+  if (name === 'nodes') loadNodes();
+  if (name === 'accounts') loadAccounts();
+  if (name === 'slots') loadSlots();
+  history.replaceState(null, '', '#' + name);
+}
+
+$('menuBtn').onclick = () => { $('sidebar').classList.add('mobile-open'); $('sidebarMask').classList.add('show'); };
+$('sidebarMask').onclick = () => { $('sidebar').classList.remove('mobile-open'); $('sidebarMask').classList.remove('show'); };
+document.querySelectorAll('.menu-item').forEach(m => m.onclick = e => { e.preventDefault(); showSection(m.dataset.section); });
+
+async function refreshStatus() {
+  const s = await api('/api/status');
+  lastStatus = s;
+  const box = $('statusBox');
+  if (s.ok && s.connected) {
+    box.innerHTML = `状态：<span class="pill ok">已连接</span> &nbsp; 节点：<b>${s.node||'-'}</b><br>` +
+      `出口 IP：<span class="mono">${s.exit_ip||'-'}</span> &nbsp; 租约剩余：${s.lease_remaining??'-'}s<br>` +
+      `对外代理地址：<span class="mono">${s.public_proxy}</span>`;
+    $('proxyHint').innerHTML = '其他容器/脚本：<code>export HTTP_PROXY='+s.public_proxy+'</code>，或 requests proxies 指向该地址';
+    $('dashMainStatus').innerHTML = '<span class="pill ok">在线</span>';
+    $('dashMainSub').textContent = (s.node||'-') + ' / ' + (s.exit_ip||'-');
+  } else {
+    box.innerHTML = '状态：<span class="pill bad">未连接</span>';
+    $('proxyHint').textContent = '调用 /api/acquire 获取一个带时效的代理连接';
+    $('dashMainStatus').innerHTML = '<span class="pill bad">离线</span>';
+    $('dashMainSub').textContent = '未连接';
+  }
+  $('dashMainProxy').textContent = s.public_proxy || '-';
+  $('mainProxy').textContent = s.public_proxy || 'http://127.0.0.1:10801';
+  $('mainPort').textContent = s.forward_port || '10801';
+}
+
+async function loadAccounts() {
+  accounts = await api('/api/accounts');
+  const tbody = $('accBody'); tbody.innerHTML = '';
+  const msel = $('mainAcc'); const ssel = $('slotAcc');
+  const keepM = msel.value, keepS = ssel.value;
+  msel.innerHTML = '<option value="">自动选择</option>';
+  ssel.innerHTML = '<option value="">请选择账户</option>';
+  let html = '';
+  for (const a of accounts) {
+    html += `<tr><td><input type="checkbox" class="accCheck" value="${a.id}"></td>` +
+      `<td class="mono">${a.id}</td><td>${a.user}</td>` +
+      `<td><button class="sm" onclick="loadAccNodes('${a.id}')">刷新节点</button> <button class="danger sm" onclick="delAccount('${a.id}')">删除</button></td></tr>`;
+    const opt = document.createElement('option'); opt.value = a.id; opt.textContent = a.user;
+    msel.appendChild(opt.cloneNode(true)); ssel.appendChild(opt.cloneNode(true));
+  }
+  tbody.innerHTML = html || '<tr><td colspan="4" class="empty">暂无账户</td></tr>';
+  msel.value = keepM; ssel.value = keepS;
+  $('dashAccCount').textContent = accounts.length;
+  loadNodes(); loadRegions();
+}
+
+function toggleAccAll() {
+  const checked = $('accCheckAll').checked;
+  document.querySelectorAll('.accCheck').forEach(c => c.checked = checked);
+}
+
+async function addAccount() {
+  const user = $('accUser').value.trim();
+  const pass = $('accPass').value;
+  if (!user || !pass) return toast('请填写账号和密码', 'error');
+  const r = await api('/api/accounts', {method:'POST', body:JSON.stringify({user, password:pass})});
+  if (r.ok) {
+    const c = r.check||{};
+    toast(`添加成功${c.ok?'，登录成功':''} ${c.membership?'会员:'+c.membership:''}`);
+    $('accUser').value=''; $('accPass').value='';
+    loadAccounts();
+  } else toast(r.error || '添加失败', 'error');
+}
+
+async function delAccount(id) {
+  if (!confirm('确认删除该账户？')) return;
+  await api('/api/accounts/'+id, {method:'DELETE'});
+  loadAccounts();
+}
+
+async function removeChecked() {
+  const ids = [...document.querySelectorAll('.accCheck:checked')].map(e=>e.value);
+  if (!ids.length) return toast('未勾选任何账户', 'error');
+  if (!confirm(`删除 ${ids.length} 个账户？`)) return;
+  for (const id of ids) await api('/api/accounts/'+id, {method:'DELETE'});
+  loadAccounts();
+  $('accCheckAll').checked = false;
+}
+
+async function loadAccNodes(id) {
+  await api(`/api/accounts/${id}/nodes?refresh=1`);
+  loadAccounts();
+  toast('节点已刷新');
+}
+
+async function loadRegions() {
+  const r = await api('/api/regions');
+  if (r.regions) {
+    $('regionList').innerHTML = r.regions.slice(0,200).map(n=>`<option value="${n}">`).join('');
+  }
+}
+
+async function doAcquire() {
+  const body = {
+    account_id: $('mainAcc').value || null,
+    region: $('region').value.trim() || null,
+    ttl: parseInt($('ttl').value)||0,
+    force: true,
+  };
+  const r = await api('/api/acquire', {method:'POST', body:JSON.stringify(body)});
+  if (r.ok) {
+    $('acquireResult').innerHTML = `<span class="pill ok">已连接</span> 账户：<b>${r.account||'-'}</b> 节点：<b>${r.node}</b> IP：<span class="mono">${r.ip}</span><br>`+
+      `代理：<span class="mono">${r.proxy}</span>${r.expire_in?(' 到期剩余：'+r.expire_in+'s'):' <b>(常驻)</b>'}<br>` +
+      `curl 用法：<code>curl -x ${r.proxy} http://ip.3322.net</code>`;
+    toast('主端口已连接');
+  } else {
+    $('acquireResult').innerHTML = `<span class="pill bad">失败</span> ${r.error||'未知错误'}`;
+    toast(r.error || '连接失败', 'error');
+  }
+  refreshStatus();
+}
+
+async function doRelease() {
+  await api('/api/release', {method:'POST'});
+  $('acquireResult').innerHTML = '<span class="pill short">已释放</span>';
+  toast('主端口已断开');
+  refreshStatus();
+}
+
+function copyProxy() {
+  copy($('mainProxy').textContent);
+  toast('主端口代理地址已复制');
+}
+
+async function loadNodes() {
+  const region = $('nodeRegion').value.trim()||null;
+  const q = region ? '?region='+encodeURIComponent(region) : '';
+  const r = await api('/api/nodes'+q);
+  $('nodeSummary').textContent = region ? `地区「${region}」可用节点 ${r.count} 个` : `全部可用节点 ${r.count} 个`;
+  const tb = $('nodeBody'); tb.innerHTML = '';
+  (r.nodes||[]).forEach(n=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${n.account_user}</td><td class="mono">${n.id}</td>` +
+      `<td><span class="pill ok">${n.status}</span></td><td>${n.name}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ---- 端口槽 ----
+
+async function loadSlots() {
+  const r = await api('/api/slots');
+  lastSlots = r.slots || [];
+  const tb = $('slotBody'); tb.innerHTML = '';
+  let online = 0;
+  (r.slots||[]).forEach(s=>{
+    if (s.connected) online++;
+    const modePill = s.persistent ? '<span class="pill long">长期</span>' : '<span class="pill short">短期</span>';
+    const connPill = s.connected ? '<span class="pill ok">在线</span>' : '<span class="pill bad">离线</span>';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="mono">${s.slot_id}</td>` +
+      `<td>${modePill}</td>` +
+      `<td><span class="mono">${s.forward_port}</span></td>` +
+      `<td>${connPill}</td>` +
+      `<td>${s.account_id||'自动'}</td>` +
+      `<td>${s.region||'-'}</td>` +
+      `<td>${s.node||'-'}</td>` +
+      `<td class="mono">${s.exit_ip||'-'}</td>` +
+      `<td>${s.lease_remaining??'-'}</td>` +
+      `<td>` +
+        `<button class="sm" onclick="connectSlot('${s.slot_id}')">连接</button>` +
+        `<button class="danger sm" onclick="disconnectSlot('${s.slot_id}')">断开</button>` +
+        `${s.slot_id==='main'?'':'<button class="danger sm" onclick="delSlot(\''+s.slot_id+'\')">删除</button>'}` +
+        `<button class="sm" onclick="copySlotProxy('${s.slot_id}')">复制代理</button>` +
+      `</td>`;
+    tb.appendChild(tr);
+  });
+  $('dashSlotOnline').textContent = online;
+  $('dashSlotSub').textContent = '总计 ' + (r.slots||[]).length + ' 个';
+  renderDashSlots();
+  const main = (r.slots||[]).find(s => s.slot_id === 'main');
+  if (main && main.account_id) $('mainAcc').value = main.account_id;
+}
+
+function renderDashSlots() {
+  const wrap = $('dashSlotWrap');
+  if (!lastSlots.length) { wrap.innerHTML = '<div class="empty">暂无端口槽</div>'; return; }
+  let html = '<table><thead><tr><th>槽ID</th><th>对外端口</th><th>状态</th><th>账户</th><th>代理地址</th></tr></thead><tbody>';
+  lastSlots.forEach(s => {
+    const status = s.connected ? '<span class="pill ok">在线</span>' : '<span class="pill bad">离线</span>';
+    html += `<tr><td class="mono">${s.slot_id}</td><td class="mono">${s.forward_port}</td><td>${status}</td><td>${s.account_id||'-'}</td><td class="mono">${s.proxy||'-'}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+async function createSlot() {
+  const body = {
+    account_id: $('slotAcc').value || null,
+    region: $('slotRegion').value.trim() || null,
+    mode: $('slotMode').value,
+    ttl: parseInt($('slotTtl').value)||60,
+  };
+  if (!body.account_id) return toast('请为额外端口槽选择一个账户', 'error');
+  const r = await api('/api/slots', {method:'POST', body:JSON.stringify(body)});
+  if (r.ok) {
+    $('slotRegion').value='';
+    toast(`已创建槽 ${r.slot_id}，对外端口 ${r.forward_port}`);
+  } else toast(r.error || '创建失败', 'error');
+  loadSlots();
+}
+
+async function connectSlot(sid) {
+  const region = prompt('地区（留空沿用槽配置）：', '');
+  const body = { force: true };
+  if (sid === 'main') {
+    body.account_id = $('mainAcc').value || null;
+    if (!body.account_id) return toast('请先为主端口选择账户', 'error');
+  }
+  if (region) body.region = region;
+  const r = await api('/api/slots/'+sid+'/connect', {method:'POST', body:JSON.stringify(body)});
+  if (r.ok) toast('槽 ' + sid + ' 已连接');
+  else toast(r.error || '连接失败', 'error');
+  loadSlots();
+}
+
+async function disconnectSlot(sid) {
+  await api('/api/slots/'+sid+'/disconnect', {method:'POST'});
+  toast('槽 ' + sid + ' 已断开');
+  loadSlots();
+}
+
+async function delSlot(sid) {
+  if (!confirm('确认删除该端口槽？（主槽不可删）')) return;
+  await api('/api/slots/'+sid, {method:'DELETE'});
+  toast('槽 ' + sid + ' 已删除');
+  loadSlots();
+}
+
+async function copySlotProxy(sid) {
+  const r = await api('/api/slots/'+sid+'/proxy');
+  if (r.ok) { copy(r.proxy); toast('代理地址已复制：' + r.proxy); }
+  else toast('获取失败', 'error');
+}
+
+// ---- 密码 ----
+
+async function showCurPwd() {
+  const r = await api('/api/auth_info');
+  $('pwdResult').innerHTML = r.ok ? `当前登录密码：<span class="mono">${r.password}</span>（来源：${r.source}）` : '获取失败';
+}
+
+async function changePassword() {
+  const body = { old_password: $('curPwd').value, new_password: $('newPwd').value };
+  const r = await api('/api/change_password', {method:'POST', body:JSON.stringify(body)});
+  if (r.ok) {
+    $('pwdResult').innerHTML = '<span class="pill ok">已更新</span> 新密码已立即生效（API Key 同步更新）';
+    $('curPwd').value=''; $('newPwd').value='';
+    toast('密码修改成功');
+  } else {
+    $('pwdResult').innerHTML = `<span class="pill bad">失败</span> ${r.error||'未知错误'}`;
+    toast(r.error || '修改失败', 'error');
+  }
+}
+
+// 路由/初始化
+const initial = (location.hash || '#dashboard').replace('#','') || 'dashboard';
+showSection(initial);
+setInterval(refreshStatus, 3000);
+setInterval(loadSlots, 5000);
+refreshStatus();
+loadAccounts();
+loadRegions();
+loadSlots();
+</script>
+</body>
+</html>

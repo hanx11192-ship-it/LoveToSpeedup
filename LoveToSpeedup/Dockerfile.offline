@@ -1,0 +1,10 @@
+# 离线构建：基于已存在的运行镜像，仅替换 /app 代码（零网络 pulls）。
+FROM lovespeedup_lovespeedup:latest
+
+WORKDIR /app
+COPY app ./app
+COPY run.py .
+COPY templates ./templates
+COPY requirements.txt .
+
+CMD ["python", "run.py"]
